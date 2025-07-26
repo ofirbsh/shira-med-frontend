@@ -1,23 +1,27 @@
 import React, { useState } from "react";
+import { Container, Box, Typography, Paper, TextField, IconButton, CircularProgress } from "@mui/material";
+import SendIcon from "@mui/icons-material/Send";
+import ChatBubble from "./ChatBubble";
 
 function App() {
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState([]); // היסטוריית שיחה
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const askPDF = async () => {
     if (!question.trim()) return;
-    const newMessage = { sender: "user", text: question };
-    setMessages((prev) => [...prev, newMessage]);
+
+    const userMessage = { sender: "user", text: question };
+    setMessages((prev) => [...prev, userMessage]);
     setLoading(true);
 
     try {
-      //const response = await fetch("http://127.0.0.1:8000/ask_pdf", {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/ask_pdf`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question }),
       });
+
       const data = await response.json();
       const botMessage = { sender: "bot", text: data.answer };
       setMessages((prev) => [...prev, botMessage]);
@@ -31,64 +35,55 @@ function App() {
   };
 
   return (
-    <div style={styles.container}>
-      <h1 style={{ textAlign: "center" }}>shira.med.ai</h1>
-      <div style={styles.chatBox}>
+    <Container maxWidth="sm" sx={{ display: "flex", flexDirection: "column", height: "100vh", padding: "20px" }}>
+      {/* כותרת עליונה */}
+      <Box sx={{ textAlign: "center", mb: 2 }}>
+        <Typography variant="h4" fontWeight="bold" color="primary">
+          shira.med.ai
+        </Typography>
+        <Typography variant="subtitle1" color="text.secondary">
+          צ'אט רפואי מבוסס ספר האריסון
+        </Typography>
+      </Box>
+
+      {/* חלון הצ'אט */}
+      <Paper
+        elevation={3}
+        sx={{
+          flex: 1,
+          padding: "10px",
+          borderRadius: "12px",
+          overflowY: "auto",
+          mb: 2,
+          backgroundColor: "#f9f9f9",
+        }}
+      >
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            style={{
-              ...styles.message,
-              alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
-              backgroundColor: msg.sender === "user" ? "#cce5ff" : "#e6e6e6",
-            }}
-          >
-            {msg.text}
-          </div>
+          <ChatBubble key={i} sender={msg.sender} text={msg.text} />
         ))}
         {loading && (
-          <div style={{ ...styles.message, backgroundColor: "#f8f8f8" }}>
-            ...שולח תשובה
-          </div>
+          <Box display="flex" justifyContent="center" mt={2}>
+            <CircularProgress size={30} />
+          </Box>
         )}
-      </div>
-      <div style={styles.inputArea}>
-        <textarea
-          rows="2"
+      </Paper>
+
+      {/* אזור הקלט */}
+      <Box sx={{ display: "flex", gap: "10px" }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="הקלד שאלה..."
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          placeholder="הקלד שאלה..."
-          style={styles.textarea}
+          onKeyDown={(e) => e.key === "Enter" && askPDF()}
         />
-        <button onClick={askPDF} disabled={loading} style={styles.button}>
-          {loading ? "שולח..." : "שלח"}
-        </button>
-      </div>
-    </div>
+        <IconButton color="primary" onClick={askPDF} disabled={loading}>
+          <SendIcon />
+        </IconButton>
+      </Box>
+    </Container>
   );
 }
-
-const styles = {
-  container: { display: "flex", flexDirection: "column", height: "100vh", padding: 20 },
-  chatBox: {
-    flex: 1,
-    border: "1px solid #ccc",
-    borderRadius: 8,
-    padding: 10,
-    overflowY: "auto",
-    marginBottom: 10,
-    backgroundColor: "#fdfdfd",
-  },
-  message: {
-    padding: 10,
-    borderRadius: 10,
-    maxWidth: "80%",
-    marginBottom: 5,
-    wordWrap: "break-word",
-  },
-  inputArea: { display: "flex", gap: 10 },
-  textarea: { flex: 1, padding: 10, borderRadius: 5, border: "1px solid #ccc" },
-  button: { padding: "10px 20px", borderRadius: 5, cursor: "pointer" },
-};
 
 export default App;
